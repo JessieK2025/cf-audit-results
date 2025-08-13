@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CF QA Audit Analysis Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50px;
+            padding: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card h2 {
+            color: #444;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .error-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .error-name {
+            font-weight: 600;
+            color: #444;
+        }
+
+        .error-stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .error-count {
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .error-percentage {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .user-details {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .recommendations {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(52, 152, 219, 0.1));
+            border-left: 4px solid #2ecc71;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+        }
+
+        .recommendations h3 {
+            color: #27ae60;
+            margin-bottom: 1rem;
+        }
+
+        .recommendations ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .recommendations li {
+            padding: 0.5rem 0;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .recommendations li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-input {
+            padding: 0.5rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .error-stats {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .filter-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CF QA Audit Analysis Dashboard</h1>
+        <p>Comprehensive insights for training optimization and accuracy improvement</p>
+    </div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">📊 Overview</button>
+            <button class="nav-tab" onclick="showTab('attributes')">🔍 Attributes</button>
+            <button class="nav-tab" onclick="showTab('users')">👥 CF Users</button>
+            <button class="nav-tab" onclick="showTab('products')">📋 Products</button>
+            <button class="nav-tab" onclick="showTab('carriers')">🏢 Carriers</button>
+            <button class="nav-tab" onclick="showTab('recommendations')">💡 Recommendations</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="card">
+                <h2>Executive Summary</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">3,351</div>
+                        <div class="stat-label">Total Attribute Errors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1,136</div>
+                        <div class="stat-label">Product Records Audited</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">13</div>
+                        <div class="stat-label">Active CF Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">14</div>
+                        <div class="stat-label">Product Types</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Key Insights</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <div>
+                            <h4>🔍 Most Common Error</h4>
+                            <p><strong>Contributions:</strong> 248 errors (7.40%)</p>
+                            <p>Affects 11 users across 7 products</p>
+                        </div>
+                        <div>
+                            <h4>👤 Highest Error Volume</h4>
+                            <p><strong>Unknown/Null Users:</strong> 1,119 errors (33.39%)</p>
+                            <p>Indicates data quality issues</p>
+                        </div>
+                        <div>
+                            <h4>📋 Most Error-Prone Product</h4>
+                            <p><strong>Dental:</strong> 1,092 errors (32.60%)</p>
+                            <p>133 unique attribute types affected</p>
+                        </div>
+                        <div>
+                            <h4>🏢 Top Carrier by Errors</h4>
+                            <p><strong>Unum:</strong> 456 errors (13.61%)</p>
+                            <p>Across 4 products, 13 users</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attributes Tab -->
+        <div id="attributes" class="tab-content">
+            <div class="card">
+                <h2>Attribute-Specific Error Analysis</h2>
+                <p style="margin-bottom: 2rem; color: #666;">Top 15 attributes with the highest error rates. Focus training efforts on these areas.</p>
+                
+                <div class="filter-controls">
+                    <input type="text" class="search-input" placeholder="Search attributes..." onkeyup="filterItems('attributes')">
+                </div>
+
+                <div id="attributes-list">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <div class="recommendations">
+                    <h3>Training Recommendations</h3>
+                    <ul>
+                        <li>Create focused training modules for "Contributions" normalization - 248 errors indicate systematic gaps</li>
+                        <li>Develop standardized guidelines for "Participation Requirement" interpretation across products</li>
+                        <li>Implement additional validation checks for "Definition of Disability" attributes</li>
+                        <li>Establish consistent "Broker Commissions" input standards across all product types</li>
+                        <li>Review dental product training materials for composite filling coverage standards</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CF Users Tab -->
+        <div id="users" class="tab-content">
+            <div class="card">
+                <h2>CF User Performance Analysis</h2>
+                <p style="margin-bottom: 2rem; color: #666;">Individual user error patterns and recommended focus areas for personalized training.</p>
+                
+                <div class="filter-controls">
+                    <input type="text" class="search-input" placeholder="Search users..." onkeyup="filterItems('users')">
+                </div>
+
+                <div id="users-list">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <div class="recommendations">
+                    <h3>User-Specific Training Recommendations</h3>
+                    <ul>
+                        <li>Address data quality issues - 33.39% of errors have no associated user identifier</li>
+                        <li>Provide personalized training for high-error users (Rojish, Gupta, Rozina) on their specific problem areas</li>
+                        <li>Recognize and leverage expertise of low-error users (Grace, Karun) for peer mentoring</li>
+                        <li>Implement user-specific quality checkpoints based on individual error patterns</li>
+                        <li>Create user dashboards for real-time error tracking and improvement monitoring</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Tab -->
+        <div id="products" class="tab-content">
+            <div class="card">
+                <h2>Product-Specific Error Analysis</h2>
+                <p style="margin-bottom: 2rem; color: #666;">Error distribution across different product types and their unique challenges.</p>
+                
+                <div class="filter-controls">
+                    <input type="text" class="search-input" placeholder="Search products..." onkeyup="filterItems('products')">
+                </div>
+
+                <div id="products-list">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <div class="recommendations">
+                    <h3>Product-Specific Training Recommendations</h3>
+                    <ul>
+                        <li>Develop comprehensive dental product training - 32.60% of all errors occur in dental products</li>
+                        <li>Create specialized disability insurance training focusing on definitions and benefit calculations</li>
+                        <li>Establish vision product quick reference guides for common attribute standardization</li>
+                        <li>Implement product-specific validation workflows to catch common errors before completion</li>
+                        <li>Design product mastery paths allowing users to specialize in specific product types</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carriers Tab -->
+        <div id="carriers" class="tab-content">
+            <div class="card">
+                <h2>Carrier-Specific Error Analysis</h2>
+                <p style="margin-bottom: 2rem; color: #666;">Error patterns by insurance carrier, highlighting carrier-specific complexities.</p>
+                
+                <div class="filter-controls">
+                    <input type="text" class="search-input" placeholder="Search carriers..." onkeyup="filterItems('carriers')">
+                </div>
+
+                <div id="carriers-list">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <div class="recommendations">
+                    <h3>Carrier-Specific Training Recommendations</h3>
+                    <ul>
+                        <li>Develop Unum-specific training materials (13.61% of errors) focusing on their unique requirements</li>
+                        <li>Create Guardian-specific guides for their distinct attribute structures and terminology</li>
+                        <li>Establish carrier-specific validation rules in the system to prevent common mistakes</li>
+                        <li>Build relationships with carrier representatives for clarification on ambiguous requirements</li>
+                        <li>Implement carrier-specific quality review checkpoints for high-error carriers</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Tab -->
+        <div id="recommendations" class="tab-content">
+            <div class="card">
+                <h2>Comprehensive Training Strategy</h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+                    <div class="recommendations">
+                        <h3>🎯 Immediate Actions (Week 1-2)</h3>
+                        <ul>
+                            <li>Address data quality issue - ensure all work is properly attributed to users</li>
+                            <li>Create quick reference cards for top 5 error-prone attributes</li>
+                            <li>Implement daily error review sessions for high-error users</li>
+                            <li>Set up automated alerts for common error patterns</li>
+                        </ul>
+                    </div>
+
+                    <div class="recommendations">
+                        <h3>📚 Training Development (Week 3-6)</h3>
+                        <ul>
+                            <li>Develop comprehensive "Contributions" normalization training module</li>
+                            <li>Create product-specific training paths for Dental, Disability, and Vision</li>
+                            <li>Build carrier-specific guides for Unum, Guardian, and Principal</li>
+                            <li>Design interactive learning modules with real-world scenarios</li>
+                        </ul>
+                    </div>
+
+                    <div class="recommendations">
+                        <h3>🔄 Process Improvements (Week 4-8)</h3>
+                        <ul>
+                            <li>Implement peer review system pairing high and low error users</li>
+                            <li>Create attribute-specific validation rules in the system</li>
+                            <li>Establish quality checkpoints at 25%, 50%, and 90% completion</li>
+                            <li>Develop real-time error feedback mechanisms</li>
+                        </ul>
+                    </div>
+
+                    <div class="recommendations">
+                        <h3>📊 Monitoring & Continuous Improvement</h3>
+                        <ul>
+                            <li>Implement weekly user-specific error rate tracking</li>
+                            <li>Create monthly attribute error trend analysis</li>
+                            <li>Establish quality improvement goals and recognition programs</li>
+                            <li>Regular review and update of training materials based on new error patterns</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="chart-container" style="margin-top: 2rem;">
+                    <h3>🎯 Success Metrics</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div style="text-align: center; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 10px;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">25%</div>
+                            <div style="font-size: 0.9rem;">Reduction in attribute errors within 30 days</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 10px;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">90%</div>
+                            <div style="font-size: 0.9rem;">User attribution accuracy target</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 10px;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">50%</div>
+                            <div style="font-size: 0.9rem;">Reduction in top 5 attribute errors</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 10px;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">95%</div>
+                            <div style="font-size: 0.9rem;">Overall accuracy target</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - in a real implementation, this would be loaded from your analysis
+        const analysisData = {
+            attributeTrends: [
+                { name: "Contributions", count: 248, percentage: "7.40", users: 11, products: 7 },
+                { name: "Participation Requirement", count: 145, percentage: "4.33", users: 11, products: 4 },
+                { name: "Definition of Disability", count: 119, percentage: "3.55", users: 10, products: 2 },
+                { name: "Broker Commissions", count: 110, percentage: "3.28", users: 11, products: 14 },
+                { name: "Earnings Definition", count: 98, percentage: "2.92", users: 11, products: 6 },
+                { name: "Composite (White) Fillings", count: 81, percentage: "2.42", users: 10, products: 2 },
+                { name: "Benefit Schedule", count: 70, percentage: "2.09", users: 11, products: 6 },
+                { name: "Partial Disability Formula", count: 68, percentage: "2.03", users: 10, products: 3 },
+                { name: "Premium Progressive", count: 68, percentage: "2.03", users: 12, products: 1 },
+                { name: "Air Bag", count: 66, percentage: "1.97", users: 10, products: 3 },
+                { name: "Eligibility Hours", count: 63, percentage: "1.88", users: 11, products: 9 },
+                { name: "Usual & Customary (UCR)", count: 60, percentage: "1.79", users: 11, products: 1 },
+                { name: "Seat Belt", count: 59, percentage: "1.76", users: 10, products: 3 },
+                { name: "Standard Progressive", count: 58, percentage: "1.73", users: 11, products: 1 },
+                { name: "Benefit Maximum", count: 58, percentage: "1.73", users: 11, products: 7 }
+            ],
+            userTrends: [
+                { name: "Data Quality Issue", totalErrors: 1119, percentage: "33.39", uniqueAttributes: 133, uniqueProducts: 14, topAttributes: ["Contributions", "Participation Requirement", "Broker Commissions"] },
+                { name: "Rojish Ranjit", totalErrors: 414, percentage: "12.35", uniqueAttributes: 101, uniqueProducts: 11, topAttributes: ["Participation Requirement", "Contributions", "Premium Progressive"] },
+                { name: "Gupta Shrestha", totalErrors: 320, percentage: "9.55", uniqueAttributes: 101, uniqueProducts: 11, topAttributes: ["Contributions", "Partial Disability Formula", "Definition of Disability"] },
+                { name: "Rozina", totalErrors: 273, percentage: "8.15", uniqueAttributes: 69, uniqueProducts: 9, topAttributes: ["Contributions", "Participation Requirement", "Definition of Disability"] },
+                { name: "Riya Jabegu", totalErrors: 262, percentage: "7.82", uniqueAttributes: 83, uniqueProducts: 10, topAttributes: ["Contributions", "Earnings Definition", "Definition of Disability"] },
+                { name: "Bibhut Shrestha", totalErrors: 233, percentage: "6.95", uniqueAttributes: 75, uniqueProducts: 11, topAttributes: ["Contributions", "Broker Commissions", "Definition of Disability"] },
+                { name: "Asmita Ghimire", totalErrors: 222, percentage: "6.62", uniqueAttributes: 73, uniqueProducts: 11, topAttributes: ["Contributions", "Definition of Disability", "Composite (White) Fillings"] },
+                { name: "Dibit Shrestha", totalErrors: 195, percentage: "5.82", uniqueAttributes: 63, uniqueProducts: 11, topAttributes: ["Contributions", "Benefit Maximum", "Participation Requirement"] },
+                { name: "Manish Tamang", totalErrors: 179, percentage: "5.34", uniqueAttributes: 81, uniqueProducts: 11, topAttributes: ["Composite (White) Fillings", "Contributions", "Partial Disability Formula"] },
+                { name: "Rocky Maharjan", totalErrors: 101, percentage: "3.01", uniqueAttributes: 59, uniqueProducts: 10, topAttributes: ["Contributions", "Definition of Disability", "Composite (White) Fillings"] }
+            ],
+            productTrends: [
+                { name: "Dental", totalErrors: 1092, percentage: "32.60", uniqueAttributes: 133, uniqueUsers: 13, topAttributes: ["Contributions", "Composite (White) Fillings", "Usual & Customary (UCR)", "Benefit Maximum", "Standard Progressive"] },
+                { name: "Disability", totalErrors: 854, percentage: "25.48", uniqueAttributes: 78, uniqueUsers: 13, topAttributes: ["Definition of Disability", "Partial Disability Formula", "Earnings Definition", "Benefit Schedule", "Premium Progressive"] },
+                { name: "Vision", totalErrors: 498, percentage: "14.86", uniqueAttributes: 49, uniqueUsers: 13, topAttributes: ["Participation Requirement", "Contributions", "Broker Commissions", "Eligibility Hours", "Benefit Schedule"] },
+                { name: "Accident", totalErrors: 306, percentage: "9.13", uniqueAttributes: 43, uniqueUsers: 12, topAttributes: ["Air Bag", "Seat Belt", "Contributions", "Broker Commissions", "Premium Progressive"] },
+                { name: "Critical Illness", totalErrors: 242, percentage: "7.22", uniqueAttributes: 37, uniqueUsers: 12, topAttributes: ["Contributions", "Broker Commissions", "Benefit Schedule", "Eligibility Hours", "Premium Progressive"] }
+            ],
+            carrierTrends: [
+                { name: "Unum", totalErrors: 456, percentage: "13.61", uniqueProducts: 4, uniqueUsers: 13 },
+                { name: "Guardian", totalErrors: 344, percentage: "10.27", uniqueProducts: 6, uniqueUsers: 13 },
+                { name: "Principal", totalErrors: 316, percentage: "9.43", uniqueProducts: 4, uniqueUsers: 12 },
+                { name: "MetLife", totalErrors: 289, percentage: "8.62", uniqueProducts: 5, uniqueUsers: 12 },
+                { name: "Aflac", totalErrors: 267, percentage: "7.97", uniqueProducts: 3, uniqueUsers: 11 },
+                { name: "Delta Dental", totalErrors: 245, percentage: "7.31", uniqueProducts: 1, uniqueUsers: 11 },
+                { name: "VSP", totalErrors: 198, percentage: "5.91", uniqueProducts: 1, uniqueUsers: 12 },
+                { name: "Blue Cross Blue Shield", totalErrors: 167, percentage: "4.98", uniqueProducts: 3, uniqueUsers: 10 },
+                { name: "Cigna", totalErrors: 134, percentage: "4.00", uniqueProducts: 4, uniqueUsers: 9 },
+                { name: "Aetna", totalErrors: 112, percentage: "3.34", uniqueProducts: 3, uniqueUsers: 8 }
+            ]
+        };
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Populate data for the selected tab
+            populateTabData(tabName);
+        }
+
+        function populateTabData(tabName) {
+            switch(tabName) {
+                case 'attributes':
+                    populateAttributesList();
+                    break;
+                case 'users':
+                    populateUsersList();
+                    break;
+                case 'products':
+                    populateProductsList();
+                    break;
+                case 'carriers':
+                    populateCarriersList();
+                    break;
+            }
+        }
+
+        function populateAttributesList() {
+            const container = document.getElementById('attributes-list');
+            container.innerHTML = '';
+            
+            analysisData.attributeTrends.forEach((attr, index) => {
+                const item = document.createElement('div');
+                item.className = 'error-item';
+                item.innerHTML = `
+                    <div>
+                        <div class="error-name">${index + 1}. ${attr.name}</div>
+                        <div class="user-details">Affects ${attr.users} users across ${attr.products} products</div>
+                    </div>
+                    <div class="error-stats">
+                        <div class="error-count">${attr.count}</div>
+                        <div class="error-percentage">${attr.percentage}%</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function populateUsersList() {
+            const container = document.getElementById('users-list');
+            container.innerHTML = '';
+            
+            analysisData.userTrends.forEach((user, index) => {
+                const item = document.createElement('div');
+                item.className = 'error-item';
+                item.innerHTML = `
+                    <div>
+                        <div class="error-name">${index + 1}. ${user.name}</div>
+                        <div class="user-details">
+                            ${user.uniqueAttributes} unique attributes, ${user.uniqueProducts} products<br>
+                            Top errors: ${user.topAttributes.join(', ')}
+                        </div>
+                    </div>
+                    <div class="error-stats">
+                        <div class="error-count">${user.totalErrors}</div>
+                        <div class="error-percentage">${user.percentage}%</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function populateProductsList() {
+            const container = document.getElementById('products-list');
+            container.innerHTML = '';
+            
+            analysisData.productTrends.forEach((product, index) => {
+                const item = document.createElement('div');
+                item.className = 'error-item';
+                item.innerHTML = `
+                    <div>
+                        <div class="error-name">${index + 1}. ${product.name}</div>
+                        <div class="user-details">
+                            ${product.uniqueAttributes} unique attributes, ${product.uniqueUsers} users<br>
+                            Top errors: ${product.topAttributes.slice(0, 3).join(', ')}
+                        </div>
+                    </div>
+                    <div class="error-stats">
+                        <div class="error-count">${product.totalErrors}</div>
+                        <div class="error-percentage">${product.percentage}%</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function populateCarriersList() {
+            const container = document.getElementById('carriers-list');
+            container.innerHTML = '';
+            
+            analysisData.carrierTrends.forEach((carrier, index) => {
+                const item = document.createElement('div');
+                item.className = 'error-item';
+                item.innerHTML = `
+                    <div>
+                        <div class="error-name">${index + 1}. ${carrier.name}</div>
+                        <div class="user-details">${carrier.uniqueProducts} products, ${carrier.uniqueUsers} users affected</div>
+                    </div>
+                    <div class="error-stats">
+                        <div class="error-count">${carrier.totalErrors}</div>
+                        <div class="error-percentage">${carrier.percentage}%</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function filterItems(tabName) {
+            const searchTerm = event.target.value.toLowerCase();
+            const container = document.getElementById(tabName + '-list');
+            const items = container.querySelectorAll('.error-item');
+            
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+            });
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            populateAttributesList();
+        });
+    </script>
+</body>
+</html>
